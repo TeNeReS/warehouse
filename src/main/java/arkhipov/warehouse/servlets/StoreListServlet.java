@@ -1,7 +1,9 @@
 package arkhipov.warehouse.servlets;
 
+import arkhipov.warehouse.dao.StoreDAO;
 import arkhipov.warehouse.models.Store;
 
+import javax.servlet.AsyncContext;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -9,60 +11,33 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.sql.*;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
+import java.util.concurrent.ThreadPoolExecutor;
 
-@WebServlet("/stores")
+@WebServlet(value = "/stores", asyncSupported = true)
 public class StoreListServlet extends HttpServlet {
+    private StoreDAO storeDAO = new StoreDAO();
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        // временное решение
-        try {
-            Class.forName("org.postgresql.Driver");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) {
+        AsyncContext asyncContext = req.startAsync();
+        asyncContext.addListener(new AsyncServletListener());
 
-        List<Store> storeList = new ArrayList<>();
-        Connection connection = getConnection();
-        try {
-            Statement stmt = connection.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT * FROM stores");
-            while (rs.next())
-            {
-                Store store = new Store();
-                store.setId( rs.getInt("id") );
-                store.setName( rs.getString("name") );
-                store.setAddress( rs.getString("address") );
-                storeList.add(store);
+        ThreadPoolExecutor executor = (ThreadPoolExecutor) req.getServletContext().getAttribute("executor");
+
+        executor.execute(() -> {
+
+            List<Store> storeList = storeDAO.getAllStores();
+
+            req.setAttribute("stores", storeList);
+
+            RequestDispatcher requestDispatcher = req.getRequestDispatcher("stores.jsp");
+            try {
+                requestDispatcher.forward(req, resp);
+            } catch (ServletException | IOException e) {
+                e.printStackTrace();
             }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-        }
 
-        req.setAttribute("stores", storeList);
-
-        RequestDispatcher requestDispatcher = req.getRequestDispatcher("stores.jsp");
-        requestDispatcher.forward(req, resp);
-    }
-
-    private Connection getConnection()
-    {
-
-        String dbUrl = "jdbc:postgresql://localhost:5432/warehouse";
-        Properties connectionProps = new Properties();
-        connectionProps.put("user", "test_user");
-        connectionProps.put("password", "password");
-
-        Connection conn = null;
-        try {
-            conn = DriverManager.getConnection(dbUrl, connectionProps);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return conn;
+            asyncContext.complete();
+        });
     }
 }

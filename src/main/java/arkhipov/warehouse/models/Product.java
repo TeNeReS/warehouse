@@ -31,4 +31,9 @@ public class Product extends BaseModel {
     public void setStoreId(Integer storeId) {
         this.storeId = storeId;
     }
+
+    @Override
+    public String toString() {
+        return String.format("Store id: %s name: %s producer: %s", getId(), getName(), getProducer());
+    }
 }

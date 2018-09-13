@@ -6,10 +6,6 @@ public class BaseModel {
     protected BaseModel() {
     }
 
-    protected BaseModel(Integer id) {
-        this.id = id;
-    }
-
     public Integer getId() {
         return id;
     }
