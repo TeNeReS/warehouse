@@ -12,8 +12,8 @@ import java.util.List;
 public class StoreDAO extends DAO {
     public List<Store> getAllStores() {
         List<Store> storeList = new ArrayList<>();
-        Connection connection = getConnection();
-        try {
+
+        try (Connection connection = getConnection()){
             Statement stmt = connection.createStatement();
             ResultSet rs = stmt.executeQuery("SELECT * FROM stores");
             while (rs.next())
@@ -25,6 +25,7 @@ public class StoreDAO extends DAO {
                 storeList.add(store);
             }
         } catch (SQLException e) {
+            System.out.println("Error during execute SQL query!");
             e.printStackTrace();
         }
         return storeList;

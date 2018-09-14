@@ -1,30 +1,44 @@
 package arkhipov.warehouse.dao;
 
+import org.apache.tomcat.jdbc.pool.DataSource;
+
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Properties;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 public class DAO {
     Connection getConnection() {
+
+        InitialContext context;
+        DataSource dataSource = null;
+
         try {
-            Class.forName("org.postgresql.Driver");
-        } catch (ClassNotFoundException e) {
-            System.out.println("org.postgresql.Driver not found!");
+            context = new InitialContext();
+            dataSource = (DataSource) context.lookup( "java:/comp/env/jdbc/postgres" );
+        } catch (NamingException e) {
+            System.out.println("Error during data source find!");
+            e.printStackTrace();
         }
 
-        String dbUrl = "jdbc:postgresql://localhost:5432/warehouse";
-        Properties connectionProps = new Properties();
-        connectionProps.put("user", "test_user");
-        connectionProps.put("password", "password");
+        Future<Connection> future;
+        Connection connection = null;
 
-        Connection conn = null;
-        try {
-            conn = DriverManager.getConnection(dbUrl, connectionProps);
-        } catch (SQLException e) {
-            System.out.println("Error during DB connection!");
+        if (dataSource != null) {
+            try {
+                future = dataSource.getConnectionAsync();
+                connection = future.get();
+                while (!future.isDone()) {
+                    System.out.println("Connection is not yet available. Do some background work");
+                }
+            } catch (SQLException | InterruptedException | ExecutionException e) {
+                System.out.println("Error during asynchronous connection!");
+                e.printStackTrace();
+            }
         }
 
-        return conn;
+        return connection;
     }
 }

@@ -35,6 +35,7 @@ public class ProductServlet extends HttpServlet {
             try {
                 requestDispatcher.forward(req, resp);
             } catch (ServletException | IOException e) {
+                System.out.println("Error during forwarding!");
                 e.printStackTrace();
             }
             asyncContext.complete();

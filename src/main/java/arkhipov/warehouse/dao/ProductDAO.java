@@ -12,8 +12,8 @@ import java.util.List;
 public class ProductDAO extends DAO {
     public List<Product> getAllProductByStoreID(Integer storeId) {
         List<Product> productList = new ArrayList<>();
-        Connection connection = getConnection();
-        try {
+
+        try (Connection connection = getConnection()) {
             PreparedStatement stmt = connection.prepareStatement("SELECT * FROM products WHERE store_id = ?");
             stmt.setInt(1, storeId);
             ResultSet rs = stmt.executeQuery();
@@ -26,6 +26,7 @@ public class ProductDAO extends DAO {
                 productList.add(product);
             }
         } catch (SQLException e) {
+            System.out.println("Error during execute SQL query!");
             e.printStackTrace();
         }
         return productList;
